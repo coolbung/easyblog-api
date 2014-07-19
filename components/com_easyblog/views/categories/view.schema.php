@@ -52,7 +52,7 @@ class EasyBlogViewCategories extends EasyBlogView
 		foreach( $rows as $row )
 		{
 			
-			$item = EasyBlogHelper::getHelper( 'SimpleSchema' )->mapPost($row);
+			$item = EasyBlogHelper::getHelper( 'SimpleSchema' )->mapPost($row, '', 100, array('text'));
 			$posts[] = $item;
 
 		}

@@ -16,59 +16,73 @@ jimport( 'simpleschema.blog.post' );
 
 class EasyBlogSimpleSchemaHelper
 {
-	public function mapPost($row) {
+	public function mapPost($row, $strip_tags='', $text_length=0, $skip=array()) {
 		$config	= EasyBlogHelper::getConfig();
-		$blog 	= EasyBlogHelper::getTable( 'Blog' );
+		
+		$blog = EasyBlogHelper::getTable( 'Blog' );
 		$blog->load( $row->id );
 
-		$user   = JFactory::getUser($row->created_by);
 		$profile = EasyBlogHelper::getTable( 'Profile', 'Table' );
-		$profile->load( $user->id );
+		$profile->load( $row->created_by );
 
-		$blog->author = $profile;
-		$created			= EasyBlogDateHelper::dateWithOffSet($row->created);
-		$formatDate         = true;
+		$created = EasyBlogDateHelper::dateWithOffSet( $row->created );
+		$formatDate = true;
 		if(EasyBlogHelper::getJoomlaVersion() >= '1.6')
 		{
-			$langCode   = EasyBlogStringHelper::getLangCode();
+			$langCode = EasyBlogStringHelper::getLangCode();
 			if($langCode != 'en-GB' || $langCode != 'en-US')
 				$formatDate = false;
 		}
-		$blog->created       = $created->toMySQL();
+		$blog->created = $created->toMySQL();
+		
 		if( $config->get( 'main_rss_content' ) == 'introtext' )
 		{
-			$blog->text			= ( !empty( $row->intro ) ) ? $row->intro : $row->content;
+			$blog->text = ( !empty( $row->intro ) ) ? $row->intro : $row->content;
 		}
 		else
 		{
-			$blog->text			= $row->intro . $row->content;
+			$blog->text	= $row->intro . $row->content;
 		   
 		}
-
-		$blog->text         = EasyBlogHelper::getHelper( 'Videos' )->strip( $blog->text );
-		$blog->text			= EasyBlogGoogleAdsense::stripAdsenseCode( $blog->text );
+		$blog->text = EasyBlogHelper::getHelper( 'Videos' )->strip( $blog->text );
+		$blog->text = EasyBlogGoogleAdsense::stripAdsenseCode( $blog->text );
 		
-		$category	= EasyBlogHelper::getTable( 'Category', 'Table' );
+		$category = EasyBlogHelper::getTable( 'Category', 'Table' );
 		$category->load( $row->category_id );
-		$blog->category = $category;
 		
-		$item						= new PostSimpleSchema;
-		$pos 						= JString::strpos(strip_tags($blog->text), ' ', 100);
-		$image_data					= json_decode($blog->image);
+		$item = new PostSimpleSchema;
+		$item->textplain = $blog->text;
 		
-		$item->postid 				= $blog->id;
-		$item->title 				= $blog->title;
-		$item->text 				= $blog->text;
-		$item->textplain 			= JString::substr(strip_tags($blog->text), 0, $pos);
-		$item->image				= $blog->getImage();
-		$item->image->url			= $image_data->url;
-		$item->created_date 		= $blog->created;
+		// @TODO : Take care of a case when strip tags and length are used together
+		if ($strip_tags) {
+			$item->textplain = strip_tags($blog->text, $strip_tags);
+		}
 		
-		$item->author->name 		= $blog->author->nickname;
-		$item->author->photo 		= $blog->author->avatar;
+		if ($text_length > 0) {
+			$pos = JString::strpos(strip_tags($item->textplain), ' ', $text_length);
+			$item->textplain = JString::substr(strip_tags($blog->text), 0, $pos);
+		}
+
+		$image_data = json_decode($blog->image);
 		
-		$item->category->categoryid	= $blog->category->id;
-		$item->category->title		= $blog->category->title;
+		$item->postid = $blog->id;
+		$item->title = $blog->title;
+		$item->text = $blog->text;
+		
+		$item->image = $blog->getImage();
+		$item->image->url = $image_data->url;
+		$item->created_date = $blog->created;
+		$item->created_date_elapsed	= EasyBlogDateHelper::getLapsedTime( $blog->created );
+		
+		$item->author->name = $profile->nickname;
+		$item->author->photo = JURI::root() . $profile->avatar;
+		
+		$item->category->categoryid = $category->id;
+		$item->category->title = $category->title;
+		
+		foreach ($skip as $v) {
+			unset($item->$v);
+		}
 
 		return $item;
 	}
