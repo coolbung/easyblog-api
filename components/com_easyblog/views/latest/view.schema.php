@@ -42,7 +42,7 @@ class EasyBlogViewLatest extends EasyBlogView
 		
 		foreach( $rows as $row )
 		{
-			$item = $this->map($row);
+			$item = EasyBlogHelper::getHelper( 'SimpleSchema' )->mapPost($row);
 			$posts[] = $item;
 		}
 		
@@ -50,64 +50,5 @@ class EasyBlogViewLatest extends EasyBlogView
 		jexit(); 
 
 	}
-	
-	// @TODO - This needs to be moved to an easysocial helper
-	public function map($row) {
-		
-		$config	= EasyBlogHelper::getConfig();		
-		$blog 	= EasyBlogHelper::getTable( 'Blog' );
-		$blog->load( $row->id );
 
-		$user   = JFactory::getUser($row->created_by);
-		$profile = EasyBlogHelper::getTable( 'Profile', 'Table' );
-		$profile->load( $user->id );
-
-		$blog->author = $profile;
-		$created			= EasyBlogDateHelper::dateWithOffSet($row->created);
-		$formatDate         = true;
-		if(EasyBlogHelper::getJoomlaVersion() >= '1.6')
-		{
-			$langCode   = EasyBlogStringHelper::getLangCode();
-			if($langCode != 'en-GB' || $langCode != 'en-US')
-				$formatDate = false;
-		}
-		$blog->created       = $created->toMySQL();
-		if( $config->get( 'main_rss_content' ) == 'introtext' )
-		{
-			$blog->text			= ( !empty( $row->intro ) ) ? $row->intro : $row->content;
-		}
-		else
-		{
-			$blog->text			= $row->intro . $row->content;
-		   
-		}
-
-		$blog->text         = EasyBlogHelper::getHelper( 'Videos' )->strip( $blog->text );
-		$blog->text			= EasyBlogGoogleAdsense::stripAdsenseCode( $blog->text );
-		
-		$category	= EasyBlogHelper::getTable( 'Category', 'Table' );
-		$category->load( $row->category_id );
-		$blog->category = $category;
-		
-		$item	= new PostSimpleSchema;
-		$pos 						= JString::strpos(strip_tags($blog->text), ' ', 100);
-		$image_data					= json_decode($blog->image);
-		
-		$item->postid 				= $blog->id;
-		$item->title 				= $blog->title;
-		$item->text 				= $blog->text;
-		$item->textplain 			= JString::substr(strip_tags($blog->text), 0, $pos);
-		$item->image				= $blog->getImage();
-		$item->image->url			= $image_data->url;
-		$item->created_date 		= $blog->created;
-		
-		$item->author->name 		= $blog->author->nickname;
-		$item->author->photo 		= $blog->author->avatar;
-		
-		$item->category->categoryid	= $blog->category->id;
-		$item->category->title		= $blog->category->title;
-
-		return $item;
-		
-	}	
 }
