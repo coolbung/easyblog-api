@@ -68,6 +68,7 @@ class EasyBlogSimpleSchemaHelper
 		$item->postid = $blog->id;
 		$item->title = $blog->title;
 		$item->text = $blog->text;
+		$item->textplain = $this->sanitize($item->textplain);
 		
 		$item->image = $blog->getImage();
 		$item->image->url = $image_data->url;
@@ -85,6 +86,13 @@ class EasyBlogSimpleSchemaHelper
 		}
 
 		return $item;
+	}
+	
+	public function sanitize($text) {
+		$text = htmlspecialchars_decode($text);
+		$text = str_ireplace('&nbsp;', ' ', $text);
+		
+		return $text;
 	}
 		
 }

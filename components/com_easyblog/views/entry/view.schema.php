@@ -42,7 +42,7 @@ class EasyBlogViewEntry extends EasyBlogView
 		}
 
 	
-		$item = EasyBlogHelper::getHelper( 'SimpleSchema' )->mapPost($blog, '<p><br><pre><a><blockquote><strong><h2><h3><em>');
+		$item = EasyBlogHelper::getHelper( 'SimpleSchema' )->mapPost($blog, '<p><br><pre><a><blockquote><strong><h2><h3><em><ul><ol><li>');
 		
 		echo $callback ? $callback . '(' . json_encode($item) . ')' : json_encode($item); 
 		jexit(); 
